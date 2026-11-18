@@ -1,0 +1,150 @@
+<!--
+  Witajcież pięknie! Zostawiamy tu ino króciutkie słówko w kodzie, coby wszystko
+  było jasne jak słońce, dyć porządek musi być:
+  1. Ta mała stronka wcale nie jest do szukania w internetach ani do żadnego
+     indeksowania przez wyszukiwarki – niech se spokojnie siedzi na uboczu.
+  2. To na pewno nie jest żadne oszustwo ani phishing, kaj tam! To ino prosta
+     stronka pod bezpośredni adres dla tych, co już mają link i chcą se wysłać
+     zwykłą wiadomość.
+  3. Bardzo Was prosimy – nie ślijcie tędy żadnych wrażliwych danych osobowych,
+     finansowych ani podatkowych. Przeca nam tego wcale nie trza, a i zwykły
+     e-mail to nie jest miejsce na takie sprawy.
+  Pięknie dziękujemy, żeście tu zajrzeli, i życzymy Wam cudnego, spokojnego dnia!
+-->
+
+<style>
+  .abcdef-tax-wrap {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #202124;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .abcdef-tax-wrap * {
+    box-sizing: border-box;
+  }
+
+  .abcdef-card {
+    background: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 16px;
+    padding: 40px 32px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .abcdef-title {
+    font-size: 2.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin: 0 0 24px 0;
+    user-select: none;
+  }
+
+  .abcdef-blue { color: #4285F4; }
+  .abcdef-red { color: #EA4335; }
+  .abcdef-yellow { color: #FBBC05; }
+  .abcdef-green { color: #34A853; }
+
+  .abcdef-search-form {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 20px 0;
+  }
+
+  .abcdef-search-input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  .abcdef-search-input:focus {
+    border-color: #4285F4;
+  }
+
+  .abcdef-btn {
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: opacity 0.15s ease;
+  }
+
+  .abcdef-btn:hover {
+    opacity: 0.9;
+  }
+
+  .abcdef-btn-search {
+    background-color: #4285F4;
+    color: #ffffff;
+  }
+
+  .abcdef-btn-email {
+    background-color: #34A853;
+    color: #ffffff !important;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .abcdef-disclaimer {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #5f6368;
+    background-color: #f1f3f4;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin: 0;
+    text-align: left;
+  }
+</style>
+
+<div class="abcdef-tax-wrap">
+  <div class="abcdef-card">
+    <div class="abcdef-title" role="heading" aria-level="1" aria-label="abcdef tax">
+      <span class="abcdef-blue">a</span><span class="abcdef-red">b</span><span class="abcdef-yellow">c</span><span class="abcdef-blue">d</span><span class="abcdef-green">e</span><span class="abcdef-red">f</span>
+      <span class="abcdef-blue">t</span><span class="abcdef-yellow">a</span><span class="abcdef-green">x</span>
+    </div>
+
+    <form class="abcdef-search-form" id="abcdefRedirectForm" action="https://en.wikipedia.org/wiki/Google_tax" method="get">
+      <input
+        type="text"
+        class="abcdef-search-input"
+        placeholder="Search abcdef tax..."
+        aria-label="Search abcdef tax"
+      />
+      <button type="submit" class="abcdef-btn abcdef-btn-search">Search</button>
+    </form>
+
+    <a
+      class="abcdef-btn abcdef-btn-email"
+      href="mailto:adamecornelius@gmail.com?subject=abcdef%20Tax%20Correspondence"
+    >
+      Email Correspondence
+    </a>
+
+    <p class="abcdef-disclaimer">
+      <strong>Notice:</strong> Standard email is not end-to-end encrypted. Please do
+      <strong>not</strong> send sensitive tax forms, Social Security numbers, or confidential
+      personal information through this link. abcdef tax takes no responsibility for sensitive
+      information transmitted over unencrypted email.
+    </p>
+  </div>
+</div>
+
+<script>
+  document.getElementById("abcdefRedirectForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    window.location.href = "https://en.wikipedia.org/wiki/Google_tax";
+  });
+</script>
