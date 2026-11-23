@@ -1,1 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Groupings — Google Sheets Form &amp; Line Mapping</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Product Sans', 'Roboto', Arial, sans-serif;
+      background-color: #ffffff;
+      color: #202124;
+    }
+    .google-pill {
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.18);
+      border: 1px solid #dfe1e5;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .google-pill:hover,
+    .google-pill.drag-over {
+      box-shadow: 0 2px 10px rgba(32, 33, 36, 0.24);
+      border-color: rgba(223, 225, 229, 0);
+    }
+    .google-pill.drag-over {
+      background-color: #f8f9fa;
+      border: 1.5px dashed #4285F4;
+    }
+    .g-btn {
+      background-color: #f8f9fa;
+      border: 1px solid #f8f9fa;
+      color: #3c4043;
+      border-radius: 4px;
+      font-size: 14px;
+      height: 36px;
+      padding: 0 18px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .g-btn:hover {
+      border-color: #dadce0;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+      color: #202124;
+    }
+    .g-btn-primary {
+      background-color: #1a73e8;
+      border: 1px solid #1a73e8;
+      color: #ffffff;
+    }
+    .g-btn-primary:hover {
+      background-color: #1557b0;
+      border-color: #1557b0;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(66, 133, 244, 0.35);
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
 
+  <!-- Minimal Google-style Top Bar -->
+  <header class="w-full px-5 py-3.5 flex items-center justify-between text-xs sm:text-sm text-[#5f6368]">
+    <div class="flex items-center gap-5">
+      <span class="font-medium text-[#202124]">Groupings</span>
+      <button id="btn-format-help" type="button" class="hover:underline cursor-pointer">Required Columns</button>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="hidden sm:inline text-xs text-[#5f6368]">Supports Google Sheets (.xlsx, .csv)</span>
+      <div class="w-8 h-8 rounded-full bg-[#EA4335] text-white flex items-center justify-center text-xs font-medium select-none" title="Form Groupings">
+        GR
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Centered Google Homepage-Style Hero -->
+  <main class="flex-1 flex flex-col items-center px-4 pt-12 sm:pt-16 pb-12">
+    <!-- Multi-color Google-style Wordmark -->
+    <div class="select-none text-center mb-7">
+      <h1 class="text-5xl sm:text-7xl font-semibold tracking-tight leading-none">
+        <span style="color:#4285F4">G</span><span style="color:#EA4335">r</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">u</span><span style="color:#34A853">p</span><span style="color:#EA4335">i</span><span style="color:#4285F4">n</span><span style="color:#34A853">g</span><span style="color:#EA4335">s</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-[#5f6368] mt-3">
+        Map accounts to tax forms with:
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Account Number</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Account Name</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Form</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Line Grouping</span>
+      </p>
+    </div>
+
+    <!-- Centered Pill Upload Bar -->
+    <div id="drop-zone" class="google-pill w-full max-w-[584px] rounded-full px-5 py-3 flex items-center gap-3 bg-white cursor-pointer">
+      <svg class="w-5 h-5 text-[#9aa0a6] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+
+      <div id="file-label" class="flex-1 text-sm text-[#5f6368] truncate select-none">
+        Drop your Groupings sheet (.xlsx or .csv) here, or click to browse
+      </div>
+
+      <button id="btn-clear" type="button" class="hidden text-[#5f6368] hover:text-[#202124] p-1 rounded-full hover:bg-[#f1f3f4] cursor-pointer" title="Clear file">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+        <rect x="4" y="2" width="16" height="20" rx="2" fill="#34A853"/>
+        <path d="M8 9h8M8 13h8M8 17h5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+
+      <input id="file-input" type="file" accept=".csv,.xlsx,.xls" class="hidden" />
+    </div>
+
+    <!-- Classic Google-style Action Buttons -->
+    <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+      <button id="btn-upload" type="button" class="g-btn font-medium">
+        Upload Groupings
+      </button>
+      <button id="btn-download-template" type="button" class="g-btn font-medium">
+        Download Template
+      </button>
+      <button id="btn-toggle-builder" type="button" class="g-btn font-medium">
+        Create / Edit Groupings
+      </button>
+    </div>
+
+    <!-- Inline Status / Validation Banner -->
+    <div id="status-banner" class="hidden w-full max-w-[960px] mt-6 px-4 py-3 rounded-lg text-sm flex items-start gap-3 border"></div>
+
+    <!-- Groupings Workspace (Builder + Preview Table) -->
+    <section id="workspace-section" class="hidden w-full max-w-[960px] mt-8 space-y-4">
+      <!-- Summary Stats + Download -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Total Mappings</div>
+          <div id="stat-rows" class="text-xl font-semibold text-[#202124] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Tax Forms</div>
+          <div id="stat-forms" class="text-xl font-semibold text-[#202124] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Line Groupings</div>
+          <div id="stat-lines" class="text-xl font-semibold text-[#1a73e8] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-xs text-[#5f6368]">Export</div>
+            <div class="text-sm font-medium text-[#188038] mt-0.5">CSV / Sheet</div>
+          </div>
+          <button id="btn-download-groupings" type="button" class="g-btn g-btn-primary text-xs px-3 h-8 shrink-0">
+            Download
+          </button>
+        </div>
+      </div>
+
+      <!-- Add New Grouping Row Form -->
+      <form id="add-row-form" class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+        <div class="sm:col-span-2">
+          <label for="inp-acc-num" class="block text-xs font-medium text-[#5f6368] mb-1">Account Number</label>
+          <input id="inp-acc-num" type="text" required placeholder="e.g. 6100" class="w-full px-3 py-1.5 rounded border border-[#dadce0] bg-white text-sm font-mono focus:outline-none focus:border-[#1a73e8]" />
+        </div>
+        <div class="sm:col-span-4">
+          <label for="inp-acc-name" class="block text-xs font-medium text-[#5f6368] mb-1">Account Name</label>
+          <input id="inp-acc-name" type="text" required placeholder="e.g. Software &amp; Subscriptions" class="w-full px-3 py-1.5 rounded border border-[#dadce0] bg-white text-sm focus:outline-none focus:border-[#1a73e8]" />
+        </div>
+        <div class="sm:col-span-2">
+          <label for="inp-form" class="block text-xs font-medium text-[#5f6368] mb-1">Form</label>
+          <input id="inp-form" type="text" list="form-suggestions" required placeholder="e.g. Schedule C" class="w-full px-3 py-1.5 rounded border border-[#dadce0] bg-white text-sm focus:outline-none focus:border-[#1a73e8]" />
+          <datalist id="form-suggestions">
+            <option value="Form 1040"></option>
+            <option value="Schedule C"></option>
+            <option value="Schedule E"></option>
+            <option value="Schedule A"></option>
+            <option value="Form 1120"></option>
+            <option value="Form 1120-S"></option>
+            <option value="Form 1065"></option>
+          </datalist>
+        </div>
+        <div class="sm:col-span-3">
+          <label for="inp-line-group" class="block text-xs font-medium text-[#5f6368] mb-1">Line Grouping</label>
+          <input id="inp-line-group" type="text" required placeholder="e.g. Line 18 - Office Expense" class="w-full px-3 py-1.5 rounded border border-[#dadce0] bg-white text-sm focus:outline-none focus:border-[#1a73e8]" />
+        </div>
+        <div class="sm:col-span-1">
+          <button type="submit" class="g-btn g-btn-primary w-full text-xs px-2">Add</button>
+        </div>
+      </form>
+
+      <!-- Form Filter Chips -->
+      <div id="form-filter-bar" class="flex flex-wrap items-center gap-2"></div>
+
+      <!-- Groupings Table -->
+      <div class="border border-[#dadce0] rounded-lg overflow-hidden bg-white">
+        <div class="px-4 py-2.5 bg-[#f8f9fa] border-b border-[#dadce0] flex items-center justify-between">
+          <span id="preview-filename" class="text-xs font-medium text-[#3c4043]">Account Groupings</span>
+          <span id="preview-count-note" class="text-xs text-[#5f6368]">0 mappings</span>
+        </div>
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-white border-b border-[#dadce0] text-xs uppercase text-[#5f6368] sticky top-0">
+              <tr>
+                <th class="px-4 py-2.5">Account Number</th>
+                <th class="px-4 py-2.5">Account Name</th>
+                <th class="px-4 py-2.5">Form</th>
+                <th class="px-4 py-2.5">Line Grouping</th>
+                <th class="px-4 py-2.5 text-right w-16">Action</th>
+              </tr>
+            </thead>
+            <tbody id="preview-tbody" class="divide-y divide-[#f1f3f4]"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Minimal Google-style Footer -->
+  <footer class="w-full bg-[#f2f2f2] border-t border-[#dadce0] text-xs text-[#70757a] px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+    <span>Groupings Portal • Accounting &amp; Tax Prep</span>
+    <span>Required Headings: Account Number, Account Name, Form, Line Grouping</span>
+  </footer>
+
+  <!-- Format Help Modal -->
+  <div id="help-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-[#dadce0]">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-semibold text-[#202124]">Google Sheet Groupings Format</h2>
+        <button id="btn-close-modal" type="button" class="text-[#5f6368] hover:text-[#202124] cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-sm text-[#5f6368] mb-3">
+        Export your Google Sheet as <strong>.xlsx</strong> or <strong>.csv</strong> (File → Download) with these exact column headings in row 1:
+      </p>
+      <ul class="text-sm text-[#202124] space-y-1.5 bg-[#f8f9fa] p-3 rounded-lg border border-[#dadce0] font-mono text-xs mb-4">
+        <li>1. Account Number</li>
+        <li>2. Account Name</li>
+        <li>3. Form</li>
+        <li>4. Line Grouping</li>
+      </ul>
+      <div class="flex justify-end gap-2">
+        <button id="btn-modal-download" type="button" class="g-btn g-btn-primary text-xs">Download Template</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const REQUIRED_HEADERS = ["Account Number", "Account Name", "Form", "Line Grouping"];
+    let groupingRows = [];
+    let currentFileName = "";
+    let activeFormFilter = "ALL";
+    let nextRowId = 1;
+
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const fileLabel = document.getElementById("file-label");
+    const btnClear = document.getElementById("btn-clear");
+    const statusBanner = document.getElementById("status-banner");
+    const workspaceSection = document.getElementById("workspace-section");
+
+    function showBanner(type, message) {
+      statusBanner.classList.remove("hidden", "bg-[#e6f4ea]", "border-[#ceead6]", "text-[#137333]", "bg-[#fce8e6]", "border-[#fad2cf]", "text-[#c5221f]");
+      if (type === "success") {
+        statusBanner.classList.add("bg-[#e6f4ea]", "border-[#ceead6]", "text-[#137333]");
+      } else {
+        statusBanner.classList.add("bg-[#fce8e6]", "border-[#fad2cf]", "text-[#c5221f]");
+      }
+      statusBanner.textContent = message;
+    }
+
+    function hideBanner() {
+      statusBanner.classList.add("hidden");
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function resetUpload() {
+      groupingRows = [];
+      currentFileName = "";
+      activeFormFilter = "ALL";
+      fileInput.value = "";
+      fileLabel.textContent = "Drop your Groupings sheet (.xlsx or .csv) here, or click to browse";
+      fileLabel.classList.remove("text-[#202124]", "font-medium");
+      fileLabel.classList.add("text-[#5f6368]");
+      btnClear.classList.add("hidden");
+      workspaceSection.classList.add("hidden");
+      hideBanner();
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      currentFileName = file.name;
+      fileLabel.textContent = file.name;
+      fileLabel.classList.remove("text-[#5f6368]");
+      fileLabel.classList.add("text-[#202124]", "font-medium");
+      btnClear.classList.remove("hidden");
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          if (typeof XLSX === "undefined") {
+            showBanner("error", "Spreadsheet parser library is still loading. Please try again in a moment.");
+            return;
+          }
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawGrid = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+
+          if (!rawGrid || rawGrid.length < 2) {
+            showBanner("error", "The uploaded sheet is empty or has no data rows.");
+            return;
+          }
+
+          const headers = rawGrid[0].map((h) => String(h).trim());
+          const headerIndexMap = {};
+          headers.forEach((h, idx) => {
+            headerIndexMap[h.toLowerCase()] = idx;
+          });
+
+          const missing = REQUIRED_HEADERS.filter((req) => !(req.toLowerCase() in headerIndexMap));
+          if (missing.length > 0) {
+            showBanner("error", `Missing required column(s): ${missing.join(", ")}. Download the template to see the exact format.`);
+            return;
+          }
+
+          const idxAccNum = headerIndexMap["account number"];
+          const idxAccName = headerIndexMap["account name"];
+          const idxForm = headerIndexMap["form"];
+          const idxLine = headerIndexMap["line grouping"];
+
+          groupingRows = rawGrid.slice(1)
+            .filter((r) => r.some((cell) => String(cell).trim() !== ""))
+            .map((r) => ({
+              id: nextRowId++,
+              accountNumber: String(r[idxAccNum] ?? "").trim(),
+              accountName: String(r[idxAccName] ?? "").trim(),
+              form: String(r[idxForm] ?? "").trim(),
+              lineGrouping: String(r[idxLine] ?? "").trim()
+            }));
+
+          if (groupingRows.length === 0) {
+            showBanner("error", "Headers matched, but no non-empty grouping rows were found.");
+            return;
+          }
+
+          activeFormFilter = "ALL";
+          renderWorkspace();
+          showBanner("success", `Loaded ${groupingRows.length} account groupings from "${file.name}". All 4 required headings verified.`);
+        } catch (err) {
+          showBanner("error", "Could not read file. Please upload a valid .xlsx, .xls, or .csv exported from Google Sheets.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderWorkspace() {
+      workspaceSection.classList.remove("hidden");
+
+      const uniqueForms = Array.from(new Set(groupingRows.map((r) => r.form).filter(Boolean)));
+      const uniqueLines = new Set(groupingRows.map((r) => `${r.form}::${r.lineGrouping}`).filter((v) => v !== "::"));
+
+      if (activeFormFilter !== "ALL" && !uniqueForms.includes(activeFormFilter)) {
+        activeFormFilter = "ALL";
+      }
+
+      document.getElementById("stat-rows").textContent = groupingRows.length.toLocaleString("en-US");
+      document.getElementById("stat-forms").textContent = uniqueForms.length.toLocaleString("en-US");
+      document.getElementById("stat-lines").textContent = uniqueLines.size.toLocaleString("en-US");
+
+      const filterBar = document.getElementById("form-filter-bar");
+      const chips = ["ALL", ...uniqueForms].map((f) => {
+        const isActive = f === activeFormFilter;
+        const label = f === "ALL" ? `All Forms (${groupingRows.length})` : `${f} (${groupingRows.filter((r) => r.form === f).length})`;
+        const cls = isActive
+          ? "bg-[#1a73e8] text-white border-[#1a73e8]"
+          : "bg-[#f1f3f4] text-[#3c4043] border-[#dadce0] hover:bg-[#e8eaed]";
+        return `<button type="button" data-form-filter="${escapeHtml(f)}" class="form-filter-btn px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${cls}">${escapeHtml(label)}</button>`;
+      }).join("");
+      filterBar.innerHTML = chips;
+
+      const filtered = activeFormFilter === "ALL"
+        ? groupingRows
+        : groupingRows.filter((r) => r.form === activeFormFilter);
+
+      document.getElementById("preview-filename").textContent = currentFileName ? `Groupings: ${currentFileName}` : "Custom Account Groupings";
+      document.getElementById("preview-count-note").textContent = `${filtered.length} mapping${filtered.length === 1 ? "" : "s"}`;
+
+      const tbody = document.getElementById("preview-tbody");
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-xs text-[#5f6368]">No groupings yet. Add a row above or upload a Google Sheet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.slice(0, 200).map((r) => `
+        <tr class="hover:bg-[#f8f9fa]">
+          <td class="px-4 py-2 font-mono text-xs text-[#5f6368]">${escapeHtml(r.accountNumber)}</td>
+          <td class="px-4 py-2 text-[#202124]">${escapeHtml(r.accountName)}</td>
+          <td class="px-4 py-2">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#e8f0fe] text-[#1967d2]">${escapeHtml(r.form)}</span>
+          </td>
+          <td class="px-4 py-2 text-[#3c4043]">${escapeHtml(r.lineGrouping)}</td>
+          <td class="px-4 py-2 text-right">
+            <button type="button" data-delete-id="${r.id}" class="delete-row-btn text-xs text-[#5f6368] hover:text-[#c5221f] cursor-pointer">Remove</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function downloadCsv(rows, filename) {
+      const csvContent = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadTemplate() {
+      const csvRows = [
+        ["Account Number", "Account Name", "Form", "Line Grouping"],
+        ["4000", "Consulting Revenue", "Schedule C", "Line 1 - Gross Receipts"],
+        ["6100", "Software & Subscriptions", "Schedule C", "Line 18 - Office Expense"],
+        ["6200", "Business Travel", "Schedule C", "Line 24a - Travel"],
+        ["1010", "Cash - Operating", "Form 1120", "Schedule L Line 1 - Cash"]
+      ];
+      downloadCsv(csvRows, "Groupings_Template.csv");
+      showBanner("success", "Downloaded Groupings_Template.csv with headings: Account Number, Account Name, Form, Line Grouping.");
+    }
+
+    function downloadCurrentGroupings() {
+      if (groupingRows.length === 0) {
+        showBanner("error", "Add or upload at least one grouping row before downloading.");
+        return;
+      }
+      const csvRows = [
+        ["Account Number", "Account Name", "Form", "Line Grouping"],
+        ...groupingRows.map((r) => [r.accountNumber, r.accountName, r.form, r.lineGrouping])
+      ];
+      const outName = currentFileName ? currentFileName.replace(/\.(xlsx|xls|csv)$/i, "") + "_Groupings.csv" : "Account_Groupings.csv";
+      downloadCsv(csvRows, outName);
+      showBanner("success", `Downloaded ${groupingRows.length} groupings as ${outName}.`);
+    }
+
+    dropZone.addEventListener("click", (e) => {
+      if (e.target.closest("#btn-clear")) return;
+      fileInput.click();
+    });
+
+    document.getElementById("btn-upload").addEventListener("click", () => fileInput.click());
+    document.getElementById("btn-download-template").addEventListener("click", downloadTemplate);
+    document.getElementById("btn-download-groupings").addEventListener("click", downloadCurrentGroupings);
+
+    document.getElementById("btn-toggle-builder").addEventListener("click", () => {
+      if (groupingRows.length === 0) {
+        groupingRows = [
+          { id: nextRowId++, accountNumber: "4000", accountName: "Consulting Revenue", form: "Schedule C", lineGrouping: "Line 1 - Gross Receipts" },
+          { id: nextRowId++, accountNumber: "6100", accountName: "Software & Subscriptions", form: "Schedule C", lineGrouping: "Line 18 - Office Expense" }
+        ];
+      }
+      renderWorkspace();
+      document.getElementById("inp-acc-num").focus();
+    });
+
+    document.getElementById("add-row-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const accNum = document.getElementById("inp-acc-num").value.trim();
+      const accName = document.getElementById("inp-acc-name").value.trim();
+      const form = document.getElementById("inp-form").value.trim();
+      const lineGrouping = document.getElementById("inp-line-group").value.trim();
+      if (!accNum || !accName || !form || !lineGrouping) return;
+
+      groupingRows.push({
+        id: nextRowId++,
+        accountNumber: accNum,
+        accountName: accName,
+        form: form,
+        lineGrouping: lineGrouping
+      });
+      e.target.reset();
+      renderWorkspace();
+      showBanner("success", `Added mapping for ${accNum} (${accName}) → ${form}: ${lineGrouping}.`);
+    });
+
+    document.getElementById("form-filter-bar").addEventListener("click", (e) => {
+      const btn = e.target.closest(".form-filter-btn");
+      if (!btn) return;
+      activeFormFilter = btn.dataset.formFilter;
+      renderWorkspace();
+    });
+
+    document.getElementById("preview-tbody").addEventListener("click", (e) => {
+      const btn = e.target.closest(".delete-row-btn");
+      if (!btn) return;
+      const id = parseInt(btn.dataset.deleteId, 10);
+      groupingRows = groupingRows.filter((r) => r.id !== id);
+      renderWorkspace();
+    });
+
+    document.getElementById("btn-modal-download").addEventListener("click", () => {
+      downloadTemplate();
+      document.getElementById("help-modal").classList.add("hidden");
+      document.getElementById("help-modal").classList.remove("flex");
+    });
+
+    btnClear.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetUpload();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("drag-over");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("drag-over");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-over");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    document.getElementById("btn-format-help").addEventListener("click", () => {
+      document.getElementById("help-modal").classList.remove("hidden");
+      document.getElementById("help-modal").classList.add("flex");
+    });
+
+    document.getElementById("btn-close-modal").addEventListener("click", () => {
+      document.getElementById("help-modal").classList.add("hidden");
+      document.getElementById("help-modal").classList.remove("flex");
+    });
+  </script>
+</body>
+</html>
