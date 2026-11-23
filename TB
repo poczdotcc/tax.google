@@ -1,1 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TB Upload — Google Sheets Trial Balance</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Product Sans', 'Roboto', Arial, sans-serif;
+      background-color: #ffffff;
+      color: #202124;
+    }
+    .google-pill {
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.18);
+      border: 1px solid #dfe1e5;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .google-pill:hover,
+    .google-pill.drag-over {
+      box-shadow: 0 2px 10px rgba(32, 33, 36, 0.24);
+      border-color: rgba(223, 225, 229, 0);
+    }
+    .google-pill.drag-over {
+      background-color: #f8f9fa;
+      border: 1.5px dashed #4285F4;
+    }
+    .g-btn {
+      background-color: #f8f9fa;
+      border: 1px solid #f8f9fa;
+      color: #3c4043;
+      border-radius: 4px;
+      font-size: 14px;
+      height: 36px;
+      padding: 0 18px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .g-btn:hover {
+      border-color: #dadce0;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+      color: #202124;
+    }
+    .g-btn-primary {
+      background-color: #1a73e8;
+      border: 1px solid #1a73e8;
+      color: #ffffff;
+    }
+    .g-btn-primary:hover {
+      background-color: #1557b0;
+      border-color: #1557b0;
+      color: #ffffff;
+      box-shadow: 0 1px 2px rgba(66, 133, 244, 0.35);
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
 
+  <!-- Minimal Google-style Top Bar -->
+  <header class="w-full px-5 py-3.5 flex items-center justify-between text-xs sm:text-sm text-[#5f6368]">
+    <div class="flex items-center gap-5">
+      <span class="font-medium text-[#202124]">Trial Balance</span>
+      <button id="btn-format-help" type="button" class="hover:underline cursor-pointer">Required Columns</button>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="hidden sm:inline text-xs text-[#5f6368]">Supports Google Sheets (.xlsx, .csv)</span>
+      <div class="w-8 h-8 rounded-full bg-[#34A853] text-white flex items-center justify-center text-xs font-medium select-none" title="Trial Balance">
+        TB
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Centered Google Homepage-Style Hero -->
+  <main class="flex-1 flex flex-col items-center px-4 pt-12 sm:pt-20 pb-12">
+    <!-- Multi-color Google-style Wordmark -->
+    <div class="select-none text-center mb-7">
+      <h1 class="text-5xl sm:text-7xl font-semibold tracking-tight leading-none">
+        <span style="color:#4285F4">T</span><span style="color:#EA4335">r</span><span style="color:#FBBC05">i</span><span style="color:#4285F4">a</span><span style="color:#34A853">l</span>
+        <span class="font-normal text-[#5f6368] ml-1">Balance</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-[#5f6368] mt-3">
+        Upload your Google Sheet export coded with:
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Account number</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Account Name</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Amount</span>,
+        <span class="font-mono text-[#202124] bg-[#f1f3f4] px-1.5 py-0.5 rounded">Grouping</span>
+      </p>
+    </div>
+
+    <!-- Centered Pill Upload Bar -->
+    <div id="drop-zone" class="google-pill w-full max-w-[584px] rounded-full px-5 py-3 flex items-center gap-3 bg-white cursor-pointer">
+      <svg class="w-5 h-5 text-[#9aa0a6] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+
+      <div id="file-label" class="flex-1 text-sm text-[#5f6368] truncate select-none">
+        Drop your Trial Balance (.xlsx or .csv) here, or click to browse
+      </div>
+
+      <button id="btn-clear" type="button" class="hidden text-[#5f6368] hover:text-[#202124] p-1 rounded-full hover:bg-[#f1f3f4] cursor-pointer" title="Clear file">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+        <rect x="4" y="2" width="16" height="20" rx="2" fill="#34A853"/>
+        <path d="M8 9h8M8 13h8M8 17h5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+
+      <input id="file-input" type="file" accept=".csv,.xlsx,.xls" class="hidden" />
+    </div>
+
+    <!-- Two Classic Google-style Action Buttons -->
+    <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+      <button id="btn-upload" type="button" class="g-btn font-medium">
+        Upload Trial Balance
+      </button>
+      <button id="btn-download-template" type="button" class="g-btn font-medium">
+        Download Template
+      </button>
+    </div>
+
+    <!-- Inline Status / Validation Banner -->
+    <div id="status-banner" class="hidden w-full max-w-[820px] mt-6 px-4 py-3 rounded-lg text-sm flex items-start gap-3 border"></div>
+
+    <!-- Uploaded Trial Balance Preview & Summary Section -->
+    <section id="preview-section" class="hidden w-full max-w-[960px] mt-8 space-y-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Accounts</div>
+          <div id="stat-rows" class="text-xl font-semibold text-[#202124] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Groupings</div>
+          <div id="stat-groups" class="text-xl font-semibold text-[#202124] tabular-nums mt-0.5">0</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5">
+          <div class="text-xs text-[#5f6368]">Net Balance</div>
+          <div id="stat-net" class="text-xl font-semibold text-[#1a73e8] tabular-nums mt-0.5">$0.00</div>
+        </div>
+        <div class="bg-[#f8f9fa] border border-[#dadce0] rounded-lg p-3.5 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-xs text-[#5f6368]">TB Check</div>
+            <div id="stat-balance-status" class="text-sm font-medium text-[#188038] mt-0.5">In Balance</div>
+          </div>
+          <button id="btn-download-tb" type="button" class="g-btn g-btn-primary text-xs px-3 h-8 shrink-0">
+            Download TB
+          </button>
+        </div>
+      </div>
+
+      <!-- Grouping Breakdown Chips -->
+      <div id="grouping-summary" class="flex flex-wrap gap-2"></div>
+
+      <div class="border border-[#dadce0] rounded-lg overflow-hidden bg-white">
+        <div class="px-4 py-2.5 bg-[#f8f9fa] border-b border-[#dadce0] flex items-center justify-between">
+          <span id="preview-filename" class="text-xs font-medium text-[#3c4043]">Uploaded Trial Balance</span>
+          <span class="text-xs text-[#5f6368]">Showing up to 200 rows</span>
+        </div>
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-white border-b border-[#dadce0] text-xs uppercase text-[#5f6368] sticky top-0">
+              <tr>
+                <th class="px-4 py-2.5">Account number</th>
+                <th class="px-4 py-2.5">Account Name</th>
+                <th class="px-4 py-2.5 text-right">Amount</th>
+                <th class="px-4 py-2.5">Grouping</th>
+              </tr>
+            </thead>
+            <tbody id="preview-tbody" class="divide-y divide-[#f1f3f4]"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Minimal Google-style Footer -->
+  <footer class="w-full bg-[#f2f2f2] border-t border-[#dadce0] text-xs text-[#70757a] px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+    <span>Trial Balance Portal • Accounting &amp; Tax Prep</span>
+    <span>Required Headings: Account number, Account Name, Amount, Grouping</span>
+  </footer>
+
+  <!-- Format Help Modal -->
+  <div id="help-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-[#dadce0]">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base font-semibold text-[#202124]">Google Sheet Trial Balance Format</h2>
+        <button id="btn-close-modal" type="button" class="text-[#5f6368] hover:text-[#202124] cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p class="text-sm text-[#5f6368] mb-3">
+        Export your Google Sheet as <strong>.xlsx</strong> or <strong>.csv</strong> (File → Download) with these exact column headings in row 1:
+      </p>
+      <ul class="text-sm text-[#202124] space-y-1.5 bg-[#f8f9fa] p-3 rounded-lg border border-[#dadce0] font-mono text-xs mb-4">
+        <li>1. Account number</li>
+        <li>2. Account Name</li>
+        <li>3. Amount</li>
+        <li>4. Grouping</li>
+      </ul>
+      <div class="flex justify-end gap-2">
+        <button id="btn-modal-download" type="button" class="g-btn g-btn-primary text-xs">Download Template</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const REQUIRED_HEADERS = ["Account number", "Account Name", "Amount", "Grouping"];
+    let parsedRows = [];
+    let currentFileName = "";
+
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const fileLabel = document.getElementById("file-label");
+    const btnClear = document.getElementById("btn-clear");
+    const statusBanner = document.getElementById("status-banner");
+    const previewSection = document.getElementById("preview-section");
+
+    function showBanner(type, message) {
+      statusBanner.classList.remove("hidden", "bg-[#e6f4ea]", "border-[#ceead6]", "text-[#137333]", "bg-[#fce8e6]", "border-[#fad2cf]", "text-[#c5221f]");
+      if (type === "success") {
+        statusBanner.classList.add("bg-[#e6f4ea]", "border-[#ceead6]", "text-[#137333]");
+      } else {
+        statusBanner.classList.add("bg-[#fce8e6]", "border-[#fad2cf]", "text-[#c5221f]");
+      }
+      statusBanner.textContent = message;
+    }
+
+    function hideBanner() {
+      statusBanner.classList.add("hidden");
+    }
+
+    function formatCurrency(val) {
+      const cleaned = String(val ?? "").replace(/[$,\s]/g, "");
+      const n = parseFloat(cleaned);
+      if (!Number.isFinite(n)) return String(val ?? "");
+      return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    }
+
+    function parseNumeric(val) {
+      const cleaned = String(val ?? "").replace(/[$,\s]/g, "");
+      const n = parseFloat(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function resetUpload() {
+      parsedRows = [];
+      currentFileName = "";
+      fileInput.value = "";
+      fileLabel.textContent = "Drop your Trial Balance (.xlsx or .csv) here, or click to browse";
+      fileLabel.classList.remove("text-[#202124]", "font-medium");
+      fileLabel.classList.add("text-[#5f6368]");
+      btnClear.classList.add("hidden");
+      previewSection.classList.add("hidden");
+      hideBanner();
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      currentFileName = file.name;
+      fileLabel.textContent = file.name;
+      fileLabel.classList.remove("text-[#5f6368]");
+      fileLabel.classList.add("text-[#202124]", "font-medium");
+      btnClear.classList.remove("hidden");
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          if (typeof XLSX === "undefined") {
+            showBanner("error", "Spreadsheet parser library is still loading. Please try again in a moment.");
+            return;
+          }
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawGrid = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+
+          if (!rawGrid || rawGrid.length < 2) {
+            previewSection.classList.add("hidden");
+            showBanner("error", "The uploaded sheet is empty or has no data rows.");
+            return;
+          }
+
+          const headers = rawGrid[0].map((h) => String(h).trim());
+          const headerIndexMap = {};
+          headers.forEach((h, idx) => {
+            headerIndexMap[h.toLowerCase()] = idx;
+          });
+
+          const missing = REQUIRED_HEADERS.filter((req) => !(req.toLowerCase() in headerIndexMap));
+          if (missing.length > 0) {
+            previewSection.classList.add("hidden");
+            showBanner("error", `Missing required column(s): ${missing.join(", ")}. Download the template to see the exact format.`);
+            return;
+          }
+
+          const idxAccNum = headerIndexMap["account number"];
+          const idxAccName = headerIndexMap["account name"];
+          const idxAmt = headerIndexMap["amount"];
+          const idxGroup = headerIndexMap["grouping"];
+
+          parsedRows = rawGrid.slice(1)
+            .filter((r) => r.some((cell) => String(cell).trim() !== ""))
+            .map((r) => ({
+              accountNumber: String(r[idxAccNum] ?? "").trim(),
+              accountName: String(r[idxAccName] ?? "").trim(),
+              amount: r[idxAmt],
+              grouping: String(r[idxGroup] ?? "").trim()
+            }));
+
+          if (parsedRows.length === 0) {
+            previewSection.classList.add("hidden");
+            showBanner("error", "Headers matched, but no non-empty trial balance rows were found.");
+            return;
+          }
+
+          renderPreview();
+          showBanner("success", `Loaded ${parsedRows.length} Trial Balance rows from "${file.name}". All 4 required headings verified.`);
+        } catch (err) {
+          previewSection.classList.add("hidden");
+          showBanner("error", "Could not read file. Please upload a valid .xlsx, .xls, or .csv exported from Google Sheets.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderPreview() {
+      const groupTotals = {};
+      let netBalance = 0;
+
+      parsedRows.forEach((r) => {
+        const amt = parseNumeric(r.amount);
+        netBalance += amt;
+        const grp = r.grouping || "Ungrouped";
+        groupTotals[grp] = (groupTotals[grp] || 0) + amt;
+      });
+
+      const isBalanced = Math.abs(netBalance) < 0.01;
+      document.getElementById("stat-rows").textContent = parsedRows.length.toLocaleString("en-US");
+      document.getElementById("stat-groups").textContent = Object.keys(groupTotals).length.toLocaleString("en-US");
+      document.getElementById("stat-net").textContent = netBalance.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+      const balEl = document.getElementById("stat-balance-status");
+      if (isBalanced) {
+        balEl.textContent = "In Balance";
+        balEl.className = "text-sm font-medium text-[#188038] mt-0.5";
+      } else {
+        balEl.textContent = "Out of Balance";
+        balEl.className = "text-sm font-medium text-[#c5221f] mt-0.5";
+      }
+
+      document.getElementById("grouping-summary").innerHTML = Object.entries(groupTotals).map(([grp, sum]) => `
+        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs bg-[#f1f3f4] text-[#3c4043] border border-[#dadce0]">
+          <span class="font-medium">${escapeHtml(grp)}</span>
+          <span class="tabular-nums text-[#202124]">${escapeHtml(sum.toLocaleString("en-US", { style: "currency", currency: "USD" }))}</span>
+        </span>
+      `).join("");
+
+      document.getElementById("preview-filename").textContent = `Preview: ${currentFileName}`;
+
+      const tbody = document.getElementById("preview-tbody");
+      tbody.innerHTML = parsedRows.slice(0, 200).map((r) => `
+        <tr class="hover:bg-[#f8f9fa]">
+          <td class="px-4 py-2 font-mono text-xs text-[#5f6368]">${escapeHtml(r.accountNumber)}</td>
+          <td class="px-4 py-2 text-[#202124]">${escapeHtml(r.accountName)}</td>
+          <td class="px-4 py-2 text-right tabular-nums font-medium text-[#202124]">${escapeHtml(formatCurrency(r.amount))}</td>
+          <td class="px-4 py-2 text-[#5f6368]">${escapeHtml(r.grouping)}</td>
+        </tr>
+      `).join("");
+
+      previewSection.classList.remove("hidden");
+    }
+
+    function downloadCsv(rows, filename) {
+      const csvContent = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadTemplate() {
+      const csvRows = [
+        ["Account number", "Account Name", "Amount", "Grouping"],
+        ["1010", "Cash - Operating", "25000.00", "Assets"],
+        ["2000", "Accounts Payable", "-5000.00", "Liabilities"],
+        ["3000", "Owner's Equity", "-10000.00", "Equity"],
+        ["4000", "Consulting Revenue", "-15000.00", "Revenue"],
+        ["6100", "Software & Subscriptions", "5000.00", "Expenses"]
+      ];
+      downloadCsv(csvRows, "TB_Upload_Template.csv");
+      showBanner("success", "Downloaded TB_Upload_Template.csv with headings: Account number, Account Name, Amount, Grouping.");
+    }
+
+    function downloadCurrentTB() {
+      if (parsedRows.length === 0) return;
+      const csvRows = [
+        ["Account number", "Account Name", "Amount", "Grouping"],
+        ...parsedRows.map((r) => [r.accountNumber, r.accountName, parseNumeric(r.amount).toFixed(2), r.grouping])
+      ];
+      const outName = currentFileName ? currentFileName.replace(/\.(xlsx|xls|csv)$/i, "") + "_TB.csv" : "Trial_Balance_Export.csv";
+      downloadCsv(csvRows, outName);
+      showBanner("success", `Downloaded Trial Balance as ${outName}.`);
+    }
+
+    dropZone.addEventListener("click", (e) => {
+      if (e.target.closest("#btn-clear")) return;
+      fileInput.click();
+    });
+
+    document.getElementById("btn-upload").addEventListener("click", () => fileInput.click());
+    document.getElementById("btn-download-template").addEventListener("click", downloadTemplate);
+    document.getElementById("btn-download-tb").addEventListener("click", downloadCurrentTB);
+    document.getElementById("btn-modal-download").addEventListener("click", () => {
+      downloadTemplate();
+      document.getElementById("help-modal").classList.add("hidden");
+      document.getElementById("help-modal").classList.remove("flex");
+    });
+
+    btnClear.addEventListener("click", (e) => {
+      e.stopPropagation();
+      resetUpload();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("drag-over");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("drag-over");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-over");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    document.getElementById("btn-format-help").addEventListener("click", () => {
+      document.getElementById("help-modal").classList.remove("hidden");
+      document.getElementById("help-modal").classList.add("flex");
+    });
+
+    document.getElementById("btn-close-modal").addEventListener("click", () => {
+      document.getElementById("help-modal").classList.add("hidden");
+      document.getElementById("help-modal").classList.remove("flex");
+    });
+  </script>
+</body>
+</html>
